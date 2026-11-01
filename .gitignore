@@ -1,0 +1,11 @@
+# Ignore compiled executables and object targets
+build/
+.vs/
+out/
+bin/
+obj/
+*.exe
+*.o
+
+# Ignore package manager tracking data
+vcpkg/
