@@ -56,6 +56,13 @@
           </div>
         </div>
 
+        <div class="field">
+          <label for="strategy">Rule selection <span class="hint">how the engine combines the rules</span></label>
+          <select id="strategy">
+            <option value="all">Use all three rules</option>
+            <option value="best">Most accurate (avoid trapezoid)</option>
+          </select>
+        </div>
         <button class="primary" id="runBtn" type="button">Calculate area</button>
         <div class="error" id="errorBox" role="alert"></div>
       </div>
