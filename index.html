@@ -2,165 +2,280 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Hybrid Integration Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Numerical Analysis System</title>
+    <!-- Include Chart.js for live dynamic charting -->
     <script src="https://jsdelivr.net"></script>
     <style>
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; margin: 40px; }
-        .wrapper { max-width: 800px; background: white; padding: 35px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin: 0 auto; }
-        h1, h2 { color: #0f172a; margin-top: 0; }
-        h1 { border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; }
-        .form-row { margin-bottom: 20px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; color: #334155; }
-        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
-        .file-box { background: #f8fafc; border: 2px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; margin-bottom: 20px; }
-        button { background: #2563eb; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: background 0.2s; }
-        button:hover { background: #1d4ed8; }
-        .output-panel { margin-top: 30px; padding: 25px; background: #f1f5f9; border-radius: 12px; display: none; }
-        .result-val { font-size: 28px; font-weight: bold; color: #2563eb; }
-        .legend { display: flex; gap: 15px; margin-top: 10px; font-size: 14px; font-weight: 600; }
-        .legend-item { display: flex; align-items: center; gap: 6px; }
-        .box-38 { wIdth: 12px; height: 12px; background: rgba(234, 179, 8, 0.4); border: 2px solid #eab308; }
-        .box-13 { wIdth: 12px; height: 12px; background: rgba(34, 197, 94, 0.4); border: 2px solid #22c55e; }
-        .box-trap { wIdth: 12px; height: 12px; background: rgba(239, 68, 68, 0.4); border: 2px solid #ef4444; }
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: #f8fafc; 
+            color: #0f172a;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .wrapper { 
+            width: 100%;
+            max-width: 750px; 
+            background: white; 
+            padding: 35px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        h2 { 
+            color: #0f172a; 
+            margin-top: 0; 
+            border-bottom: 2px solid #f1f5f9; 
+            padding-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .badge { 
+            background: #e0f2fe; 
+            color: #0369a1; 
+            padding: 4px 10px; 
+            border-radius: 9999px; 
+            font-size: 14px; 
+            font-weight: 600;
+        }
+        .form-row { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+            color: #334155;
+        }
+        input[type="text"], input[type="number"] { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: #fff;
+            color: #0f172a;
+        }
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .file-box { 
+            background: #f8fafc; 
+            border: 2px dashed #cbd5e1; 
+            padding: 25px; 
+            text-align: center; 
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+        .file-box:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        button { 
+            width: 100%;
+            background: #2563eb; 
+            color: white; 
+            border: none; 
+            padding: 14px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            border-radius: 8px; 
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        button:hover { 
+            background: #1d4ed8; 
+        }
+        .chart-container {
+            width: 100%; 
+            margin: 30px 0;
+            position: relative;
+        }
+        .output-panel { 
+            margin-top: 30px; 
+            padding: 25px; 
+            background: #f1f5f9; 
+            border-radius: 8px;
+            display: none;
+        }
+        .output-panel h3 {
+            margin-top: 0;
+            color: #1e293b;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .metric-label {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .result-val { 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #2563eb; 
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
 
 <div class="wrapper">
-    <h1>📐 Hybrid Integration Engine</h1>
-    <p style="color: #64748b;">Estimate the area under a curve from equally spaced samples using an optimized combination of Simpson's 3/8, 1/3, and Trapezoidal rules.</p>
+    <h2>📐 Adaptive Hybrid Integration Engine <span class="badge">v2.0</span></h2>
+    <p style="color: #64748b; margin-bottom: 25px;">Computes calculus profiles using a segmented hybrid matrix of Simpson's and Trapezoidal rules.</p>
     
     <div class="form-row">
-        <label for="step_h">Step size (h) distance between samples:</label>
-        <input type="text" id="step_h" value="1.0">
+        <label for="step_h">Interval Width Step Size (h):</label>
+        <input type="number" id="step_h" step="any" value="1.0">
+    </div>
+
+    <div class="form-row">
+        <label for="y_values">Discrete Y Coordinates (Comma Separated):</label>
+        <input type="text" id="y_values" value="0, 1, 8, 27, 64, 125, 216">
+        <small style="color:#64748b; display: block; margin-top: 5px;">Example profile: 7 coordinates form 6 integration intervals.</small>
     </div>
 
     <div class="file-box" onclick="document.getElementById('csv_file').click()">
-        <strong>📁 Click to Load from a CSV or text file</strong>
-        <input type="file" id="csv_file" style="display:none;" accept=".csv,.txt" onchange="loadUploadedDataset(this)">
+        <strong>📁 Click to Upload CSV or Text Dataset File</strong>
+        <p style="margin: 5px 0 0 0; font-size: 14px; color: #64748b;">Accepts single-row or vertical column datasets</p>
+        <input type="file" id="csv_file" style="display:none;" accept=".csv,.txt" onchange="parseLogFile(this)">
     </div>
 
-    <div class="form-row">
-        <label for="y_array">Y values separated by commas, spaces or new lines:</label>
-        <input type="text" id="y_array" value="4.0, 5.2, 6.1, 5.8, 7.3, 9.0, 8.4, 6.2">
+    <button onclick="sendCalculationRequest()">Calculate Dynamic Framework</button>
+
+    <div class="chart-container">
+        <canvas id="geometryChart"></canvas>
     </div>
 
-    <button onclick="executeAnalysisEngine()">Calculate area</button>
-
-    <div style="margin-top: 30px;">
-        <h2>📊 Sampled Curve</h2>
-        <div class="legend">
-            <div class="legend-item"><div class="box-38"></div> Simpson's 3/8</div>
-            <div class="legend-item"><div class="box-13"></div> Simpson's 1/3</div>
-            <div class="legend-item"><div class="box-trap"></div> Trapezoidal</div>
-        </div>
-        <canvas id="profileChart" style="margin-top: 15px;"></canvas>
-    </div>
-
-    <div id="outputPanel" class="output-panel">
-        <h2>✨ Result Matrix</h2>
-        <div style="margin-bottom: 15px;">Area under the curve: <span id="resArea" class="result-val">0.00</span></div>
-        <div style="font-size: 15px; color: #475569;">
-            Evaluated <strong><span id="resIntervals">0</span> intervals</strong> across <strong><span id="resPoints">0</span> data points</strong> with a step size of <strong>h = <span id="resH">0</span></strong>.
+    <div id="resultsPanel" class="output-panel">
+        <h3>Calculated Regions Summary</h3>
+        <div class="result-grid">
+            <div class="metric-card">
+                <div class="metric-label">Intelligent Hybrid Area</div>
+                <div class="result-val" id="out_area">0.0000</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Intervals Worked</div>
+                <div class="result-val" id="out_intervals">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Data Points Count</div>
+                <div class="result-val" id="out_points">0</div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-let renderingChart = null;
+    let scientificChart = null;
 
-function loadUploadedDataset(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const parsed = e.target.result.replace(/[\s\n\r]+/g, ",").split(',')
-                                      .map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
-        document.getElementById('y_array').value = parsed.join(', ');
-    };
-    reader.readAsText(file);
-}
-
-function executeAnalysisEngine() {
-    const h_str = document.getElementById('step_h').value;
-    const rawY = document.getElementById('y_array').value;
-    
-    const y = rawY.replace(/[\s\n\r]+/g, ",").split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
-    const h = parseFloat(h_str);
-
-    if (y.length < 2) {
-        alert("Requires at least 2 valid coordinates.");
-        return;
+    // Parses uploaded text or CSV logs into the input field automatically
+    function parseLogFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            // Clean dynamic rows, space separators, or vertical carriage returns into clean commas
+            const cleanedValues = text.replace(/\r?\n|\r/g, ",")
+                                      .split(',')
+                                      .map(v => parseFloat(v.trim()))
+                                      .filter(v => !isNaN(v));
+                                      
+            document.getElementById('y_values').value = cleanedValues.join(', ');
+        };
+        reader.readAsText(file);
     }
 
-    let n = y.length - 1;
-    let totalArea = 0.0;
-    let i = 0;
+    // Requests integration updates from your Crow C++ API server backend
+    function sendCalculationRequest() {
+        const h = parseFloat(document.getElementById('step_h').value);
+        const yInput = document.getElementById('y_values').value;
+        
+        // Parse and clean inputs
+        const y_values = yInput.split(',')
+                               .map(num => parseFloat(num.trim()))
+                               .filter(num => !isNaN(num));
 
-    // Track the rule used for each specific interval to color-code the graph dynamically
-    let intervalColors = [];
-    let intervalBorders = [];
-
-    // Colors mapping
-    const col38 = 'rgba(234, 179, 8, 0.3)', border38 = '#eab308';
-    const col13 = 'rgba(34, 197, 94, 0.3)', border13 = '#22c55e';
-    const colTrap = 'rgba(239, 68, 68, 0.3)', borderTrap = '#ef4444';
-
-    // 1. Process via Simpson's 3/8 Rule
-    while ((n - i) >= 3) {
-        totalArea += (3.0 * h / 8.0) * (y[i] + 3.0 * y[i+1] + 3.0 * y[i+2] + y[i+3]);
-        intervalColors.push(col38, col38, col38);
-        intervalBorders.push(border38, border38, border38);
-        i += 3;
-    }
-    // 2. Process via Simpson's 1/3 Rule
-    while ((n - i) >= 2) {
-        totalArea += (h / 3.0) * (y[i] + 4.0 * y[i+1] + y[i+2]);
-        intervalColors.push(col13, col13);
-        intervalBorders.push(border13, border13);
-        i += 2;
-    }
-    // 3. Process via Trapezoidal Rule
-    while ((n - i) >= 1) {
-        totalArea += (h / 2.0) * (y[i] + y[i+1]);
-        intervalColors.push(colTrap);
-        intervalBorders.push(borderTrap);
-        i += 1;
-    }
-
-    // Render numbers on the dashboard panels
-    document.getElementById('outputPanel').style.display = 'block';
-    document.getElementById('resArea').innerText = totalArea.toFixed(5);
-    document.getElementById('resIntervals').innerText = n;
-    document.getElementById('resPoints').innerText = y.length;
-    document.getElementById('resH').innerText = h;
-
-    const x_labels = y.map((_, index) => (index * h).toFixed(2));
-    
-    // Renders segmented visual bars matching the exact rule used per segment range
-    const ctx = document.getElementById('profileChart').getContext('2d');
-    if (renderingChart) renderingChart.destroy();
-    
-    renderingChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: x_labels,
-            datasets: [{
-                label: 'Discrete Sample Nodes',
-                data: y,
-                backgroundColor: intervalColors.concat([intervalColors[intervalColors.length - 1]]),
-                borderColor: intervalBorders.concat([intervalBorders[intervalBorders.length - 1]]),
-                borderWidth: 2,
-                categoryPercentage: 1.0,
-                barPercentage: 1.0
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
+        if (y_values.length < 2) {
+            alert("Calculation requires at least 2 discrete coordinates.");
+            return;
         }
-    });
-}
-</script>
-</body>
-</html>
+
+        // Build continuous dynamic labels for standard x axis plotting array [0, h, 2h, 3h...]
+        const xLabels = y_values.map((_, index) => (index * h).toFixed(2));
+
+        fetch('/api/calculate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ h: h, y_values: y_values })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Server communication fault.");
+            return res.json();
+        })
+        .then(data => {
+            // Unveil the performance results dashboard matrix
+            document.getElementById('resultsPanel').style.display = 'block';
+            document.getElementById('out_area').innerText = data.calculated_area.toFixed(4);
+            document.getElementById('out_intervals').innerText = data.intervals;
+            document.getElementById('out_points').innerText = data.points_count;
+
+            // Trigger real-world dynamic layout chart painting loop
+            updateInteractiveVisuals(xLabels, y_values);
+        })
+        .catch(err => {
+            alert("Error communicating with C++ API server backend. Ensure server is running on port 18080.");
+            console.error(err);
+        });
+    }
+
+    // Handles the geometry rendering parameters inside the ChartJS canvas pipeline
+    function updateInteractiveVisuals(xLabels, yData) {
+        const ctx = document.getElementById('geometryChart').getContext('2d');
+        
+        // Wipe historical references to prevent memory overlaps or mouse hover clipping trace updates
+        if (scientificChart) { 
+            scientificChart.destroy(); 
+        }
+
+        scientificChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: xLabels, 
+                datasets: [{
+                    label: 'Discrete Calculus Profile',
+                    data: yData,
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 2,
+                    fill: true, 
+                    tension: 0.2
+                }]
+            },
+            options: { 
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: { 
+                    y: { 
+                        beginAtZero: true,
