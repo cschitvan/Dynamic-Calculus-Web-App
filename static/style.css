@@ -38,6 +38,7 @@ input[type=text], textarea {
   width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px;
   font: .95rem var(--mono); color: var(--ink); background: var(--field);
 }
+select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; font: .95rem var(--sans); color: var(--ink); background: var(--field); }
 textarea { min-height: 110px; resize: vertical; }
 :focus-visible { outline: 2px solid var(--r13); outline-offset: 2px; }
 .field { margin-bottom: 16px; }
