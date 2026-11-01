@@ -12,25 +12,30 @@ const PRESETS = [
 let chart = null, mode = "data", lastRun = null;
 
 /* ---------- numerical methods ---------- */
-// How many intervals each rule covers: 3/8 blocks first, then 1/3 blocks; trapezoid only if there is a single interval
-function split(n) {
+// How many intervals each rule covers.
+// "all": uses 3/8, 1/3 and trapezoid together (needs 6+ intervals). "best": avoids the trapezoid.
+function split(n, strat) {
   if (n === 1) return { n38: 0, n13: 0, trap: 1 };
+  if (strat === "all" && n >= 6) {
+    const t = n === 7 ? 2 : 1, m = n - t, b = (2 * m) % 3 || 3, a = (m - 2 * b) / 3;
+    return { n38: 3 * a, n13: 2 * b, trap: t };
+  }
   const n13 = [0, 4, 2][n % 3];
   return { n38: n - n13, n13, trap: 0 };
 }
-function planRules(n) {
-  const s = split(n);
+function planRules(n, strat) {
+  const s = split(n, strat);
   return [].concat(Array(s.n38).fill("r38"), Array(s.n13).fill("r13"), Array(s.trap).fill("trap"));
 }
-function breakdown(y, h) {
-  const n = y.length - 1, s = split(n), p = { r38: [0, 0], r13: [0, 0], trap: [0, 0] };
+function breakdown(y, h, strat) {
+  const n = y.length - 1, s = split(n, strat), p = { r38: [0, 0], r13: [0, 0], trap: [0, 0] };
   let i = 0;
-  for (; i < s.n38; i += 3) { p.r38[0] += 3; p.r38[1] += 3*h/8 * (y[i] + 3*y[i+1] + 3*y[i+2] + y[i+3]); }
+  for (let k = 0; k < s.n38; k += 3, i += 3) { p.r38[0] += 3; p.r38[1] += 3*h/8 * (y[i] + 3*y[i+1] + 3*y[i+2] + y[i+3]); }
   for (let k = 0; k < s.n13; k += 2, i += 2) { p.r13[0] += 2; p.r13[1] += h/3 * (y[i] + 4*y[i+1] + y[i+2]); }
-  if (s.trap) { p.trap[0] = 1; p.trap[1] = h/2 * (y[0] + y[1]); }
+  for (let k = 0; k < s.trap; k++, i++) { p.trap[0] += 1; p.trap[1] += h/2 * (y[i] + y[i+1]); }
   return p;
 }
-const hybridArea = (y, h) => Object.values(breakdown(y, h)).reduce((s, p) => s + p[1], 0);
+const hybridArea = (y, h, strat) => Object.values(breakdown(y, h, strat)).reduce((s, p) => s + p[1], 0);
 const trapArea = (y, h) => h * (y.reduce((s, v) => s + v, 0) - (y[0] + y[y.length - 1]) / 2);
 function simpson13(y, h) { let s = y[0] + y[y.length - 1]; for (let i = 1; i < y.length - 1; i++) s += (i % 2 ? 4 : 2) * y[i]; return s * h / 3; }
 function simpson38(y, h) { let s = y[0] + y[y.length - 1]; for (let i = 1; i < y.length - 1; i++) s += (i % 3 ? 3 : 2) * y[i]; return 3 * h / 8 * s; }
@@ -73,6 +78,7 @@ function setMode(m) {
   $("modeData").hidden = m !== "data"; $("modeFunc").hidden = m !== "func";
 }
 function readInputs() {
+  const strat = $("strategy").value;
   if (mode === "func") {
     const f = compile($("fx").value), a = num($("fa").value), b = num($("fb").value), n = parseInt($("fn").value, 10);
     if (!(b > a)) throw new Error("b must be greater than a.");
@@ -81,13 +87,13 @@ function readInputs() {
     const bad = y.findIndex(v => !isFinite(v));
     if (bad >= 0) throw new Error("f(x) is not defined at x = " + +(a + bad * h).toFixed(6) + ".");
     const ref = reference(f, a, b);
-    return { y, h, hStr: String(h), x0: a, ref: isFinite(ref) ? ref : null,
-             state: { mode, f: $("fx").value, a: $("fa").value, b: $("fb").value, n: String(n) } };
+    return { y, h, hStr: String(h), x0: a, ref: isFinite(ref) ? ref : null, strat,
+             state: { mode, strat, f: $("fx").value, a: $("fa").value, b: $("fb").value, n: String(n) } };
   }
   const hStr = $("step_h").value.trim(), h = parseFloat(hStr), y = parseY($("y_array").value);
   if (isNaN(h) || h <= 0) throw new Error("Step size h must be a number greater than 0.");
   if (y.length < 2) throw new Error("Enter at least 2 valid Y values.");
-  return { y, h, hStr, x0: 0, ref: null, state: { mode, h: hStr, y: $("y_array").value } };
+  return { y, h, hStr, x0: 0, ref: null, strat, state: { mode, strat, h: hStr, y: $("y_array").value } };
 }
 function showError(msg) { const e = $("errorBox"); e.textContent = msg; e.style.display = msg ? "block" : "none"; }
 
@@ -104,7 +110,7 @@ async function run() {
     try {
       const res = await fetch("api/calculate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ h: inp.hStr, raw_y: inp.y.join(", ") })
+        body: JSON.stringify({ h: inp.hStr, raw_y: inp.y.join(", "), strategy: inp.strat })
       });
       if (res.status === 400) {
         const e = await res.json();
@@ -112,8 +118,12 @@ async function run() {
       }
       if (res.ok && (res.headers.get("content-type") || "").includes("json")) data = await res.json();
     } catch (e) { if (e.input) throw e; }
+    if (data) {   // warn if an old build of the C++ server picks different rules than this page
+      const mine = hybridArea(inp.y, inp.h, inp.strat);
+      if (Math.abs(mine - Number(data.area)) > 1e-9 * Math.max(1, Math.abs(mine))) source += " - differs from the page's own calculation, rebuild main.cpp";
+    }
     if (!data) {   // no backend reachable (GitHub Pages, local file): use the JavaScript port
-      data = { area: hybridArea(inp.y, inp.h), slices: inp.y.length - 1, points: inp.y.length };
+      data = { area: hybridArea(inp.y, inp.h, inp.strat), slices: inp.y.length - 1, points: inp.y.length };
       source = "in-browser JavaScript port of the same algorithm";
     }
     render(data, inp, source);
@@ -146,7 +156,7 @@ function render(data, inp, source) {
     ex.innerHTML = "Reference value <code>" + ref.toFixed(6) + "</code> (high-resolution Simpson, 20,000 intervals). Hybrid error <code>" + Math.abs(area - ref).toExponential(3) + "</code>.";
   } else ex.style.display = "none";
 
-  const parts = breakdown(y, h), rows = $("breakdown"); rows.innerHTML = "";
+  const parts = breakdown(y, h, inp.strat), rows = $("breakdown"); rows.innerHTML = "";
   Object.keys(RULES).forEach(k => { if (parts[k][0]) addRow(rows, [{ t: RULES[k], dot: k }, { t: String(parts[k][0]), cls: "num" }, { t: parts[k][1].toFixed(6), cls: "num" }]); });
 
   const methods = [
@@ -163,7 +173,7 @@ function render(data, inp, source) {
     else addRow(cmp, [{ t: m[0] }, { t: m[1].toFixed(6), cls: "num" }, { t: ref !== null ? Math.abs(m[1] - ref).toExponential(2) : "-", cls: "num" }], i === best ? "best" : "");
   });
 
-  drawChart(inp, planRules(n));
+  drawChart(inp, planRules(n, inp.strat));
 }
 function drawChart(inp, plan) {
   const { y, h, x0 } = inp;
@@ -210,7 +220,7 @@ function renderHistory() {
   });
 }
 function applyState(s) {
-  setMode(s.mode);
+  setMode(s.mode); $("strategy").value = s.strat || "all";
   if (s.mode === "func") { $("fx").value = s.f; $("fa").value = s.a; $("fb").value = s.b; $("fn").value = s.n; }
   else { $("step_h").value = s.h; $("y_array").value = s.y; }
   run();
