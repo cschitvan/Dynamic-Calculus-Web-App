@@ -12,19 +12,22 @@ const PRESETS = [
 let chart = null, mode = "data", lastRun = null;
 
 /* ---------- numerical methods ---------- */
+// How many intervals each rule covers: 3/8 blocks first, then 1/3 blocks; trapezoid only if there is a single interval
+function split(n) {
+  if (n === 1) return { n38: 0, n13: 0, trap: 1 };
+  const n13 = [0, 4, 2][n % 3];
+  return { n38: n - n13, n13, trap: 0 };
+}
 function planRules(n) {
-  const plan = []; let i = 0;
-  while (n - i >= 3) { plan.push("r38", "r38", "r38"); i += 3; }
-  while (n - i >= 2) { plan.push("r13", "r13"); i += 2; }
-  while (n - i >= 1) { plan.push("trap"); i += 1; }
-  return plan;
+  const s = split(n);
+  return [].concat(Array(s.n38).fill("r38"), Array(s.n13).fill("r13"), Array(s.trap).fill("trap"));
 }
 function breakdown(y, h) {
-  const n = y.length - 1, p = { r38: [0, 0], r13: [0, 0], trap: [0, 0] };
+  const n = y.length - 1, s = split(n), p = { r38: [0, 0], r13: [0, 0], trap: [0, 0] };
   let i = 0;
-  while (n - i >= 3) { p.r38[0] += 3; p.r38[1] += 3*h/8 * (y[i] + 3*y[i+1] + 3*y[i+2] + y[i+3]); i += 3; }
-  while (n - i >= 2) { p.r13[0] += 2; p.r13[1] += h/3 * (y[i] + 4*y[i+1] + y[i+2]); i += 2; }
-  while (n - i >= 1) { p.trap[0] += 1; p.trap[1] += h/2 * (y[i] + y[i+1]); i += 1; }
+  for (; i < s.n38; i += 3) { p.r38[0] += 3; p.r38[1] += 3*h/8 * (y[i] + 3*y[i+1] + 3*y[i+2] + y[i+3]); }
+  for (let k = 0; k < s.n13; k += 2, i += 2) { p.r13[0] += 2; p.r13[1] += h/3 * (y[i] + 4*y[i+1] + y[i+2]); }
+  if (s.trap) { p.trap[0] = 1; p.trap[1] = h/2 * (y[0] + y[1]); }
   return p;
 }
 const hybridArea = (y, h) => Object.values(breakdown(y, h)).reduce((s, p) => s + p[1], 0);
